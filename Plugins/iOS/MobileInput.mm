@@ -493,8 +493,10 @@ NSMutableDictionary *mobileInputList = nil;
         UIColor *color = [self getColor:data];
         if (isMultiline) {
             [(PlaceholderTextView *)editView setBackgroundColor:color];
+            [(PlaceholderTextView *)editView setOpaque:NO];
         } else {
             [(UITextField *)editView setBackgroundColor:color];
+            [(UITextField *)editView setOpaque:NO];
         }
     } else if ([msg isEqualToString:SET_READ_ONLY]) {
         BOOL isValue = [[data valueForKey:@"value"] boolValue];
@@ -744,6 +746,7 @@ NSMutableDictionary *mobileInputList = nil;
         textView.text = @"";
         textView.textColor = textColor;
         textView.backgroundColor = backgroundColor;
+        textView.opaque = NO;
         textView.returnKeyType = returnKeyType;
         textView.textAlignment = textAlign;
         textView.autocorrectionType = autoCorrection ? UITextAutocorrectionTypeYes : UITextAutocorrectionTypeNo;
@@ -774,6 +777,7 @@ NSMutableDictionary *mobileInputList = nil;
         textField.text = @"";
         textField.textColor = textColor;
         textField.backgroundColor = backgroundColor;
+        textField.opaque = NO;
         if (isChangeCaret) {
             textField.tintColor = caretColor;
         }
