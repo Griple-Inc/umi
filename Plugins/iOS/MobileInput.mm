@@ -816,9 +816,10 @@ NSMutableDictionary *mobileInputList = nil;
             // Create clear button for UITextView (similar to UITextField's clearButtonMode)
             // Use minimum 24pt size for visibility, max 60% of height
             CGFloat buttonSize = MAX(24.0, MIN(height * 0.6, 32.0));
-            CGFloat buttonPadding = 8.0;
+            CGFloat horizontalPadding = 8.0;
+            CGFloat verticalCenter = (height - buttonSize) / 2.0;
             UIButton *clearBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-            clearBtn.frame = CGRectMake(width - buttonSize - buttonPadding, buttonPadding, buttonSize, buttonSize);
+            clearBtn.frame = CGRectMake(width - buttonSize - horizontalPadding, verticalCenter, buttonSize, buttonSize);
             clearBtn.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
             // Use SF Symbol for iOS 13+ or fallback
             if (@available(iOS 13.0, *)) {
@@ -835,7 +836,7 @@ NSMutableDictionary *mobileInputList = nil;
             textView.clearButton = clearBtn;
             [textView addSubview:clearBtn];
             // Adjust text container inset to make room for clear button
-            textView.textContainerInset = UIEdgeInsetsMake(0, 0, 0, buttonSize + buttonPadding);
+            textView.textContainerInset = UIEdgeInsetsMake(0, 0, 0, buttonSize + horizontalPadding);
         }
         if (isChangeCaret) {
             textView.tintColor = caretColor;
