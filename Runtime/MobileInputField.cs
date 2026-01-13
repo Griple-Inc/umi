@@ -201,6 +201,12 @@ namespace UMI {
         public bool IsWithClearButton = false;
 
         /// <summary>
+        /// Hide placeholder text when input is focused (iOS default behavior)
+        /// Set to false for Unity-like behavior where placeholder stays until user types
+        /// </summary>
+        public bool HidePlaceholderOnFocus = false;
+
+        /// <summary>
         /// Type for return button
         /// </summary>
         public ReturnKeyType ReturnKey = ReturnKeyType.Default;
@@ -632,6 +638,7 @@ namespace UMI {
             data["align"] = _config.Align;
             data["with_done_button"] = IsWithDoneButton;
             data["with_clear_button"] = IsWithClearButton;
+            data["hide_placeholder_on_focus"] = HidePlaceholderOnFocus;
             data["font"] = CustomFont;
             data["placeholder"] = _config.Placeholder;
             data["placeholder_color_r"] = InvariantCultureString(_config.PlaceholderColor.r);

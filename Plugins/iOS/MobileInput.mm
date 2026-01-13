@@ -54,6 +54,12 @@ NSMutableDictionary *mobileInputList = nil;
 
 /// Language code
 @property (nonatomic, strong) NSString *languageCode;
+
+/// Hide placeholder on focus (YES = iOS default, NO = Unity-like behavior)
+@property(nonatomic, assign) BOOL hidePlaceholderOnFocus;
+
+/// Clear button for multiline input
+@property(nonatomic, strong) UIButton *clearButton;
 @end
 
 /// MobileInput interface
@@ -176,6 +182,12 @@ NSMutableDictionary *mobileInputList = nil;
 /// Synthesize color
 @synthesize placeholderColor;
 
+/// Synthesize hide placeholder on focus flag
+@synthesize hidePlaceholderOnFocus;
+
+/// Synthesize clear button
+@synthesize clearButton;
+
 
 /// Init placeholder
 /// - Parameter frame: Placeholder sizes and bounds
@@ -191,8 +203,10 @@ NSMutableDictionary *mobileInputList = nil;
     [super awakeFromNib];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(beginEditing:) name:UITextViewTextDidBeginEditingNotification object:self];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(endEditing:) name:UITextViewTextDidEndEditingNotification object:self];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textDidChange:) name:UITextViewTextDidChangeNotification object:self];
     self.realTextColor = self.textColor;
     self.placeholderColor = [UIColor lightGrayColor];
+    self.hidePlaceholderOnFocus = YES; // Default iOS behavior
 }
 
 /// Set text to placeholder
@@ -245,10 +259,43 @@ NSMutableDictionary *mobileInputList = nil;
 /// Edit method
 /// - Parameter notification: Notification data
 - (void)beginEditing:(NSNotification *)notification {
-    if ([self.realText isEqualToString:self.placeholder]) {
+    // Only clear placeholder on focus if hidePlaceholderOnFocus is YES (iOS default)
+    // If NO (Unity-like), placeholder stays until user types
+    if (self.hidePlaceholderOnFocus && [self.realText isEqualToString:self.placeholder]) {
         super.text = nil;
         self.textColor = self.realTextColor;
     }
+    // Show clear button if there's text
+    [self updateClearButtonVisibility];
+}
+
+/// Text changed method - for Unity-like placeholder behavior
+/// - Parameter notification: Notification data
+- (void)textDidChange:(NSNotification *)notification {
+    // If not hiding on focus, clear placeholder when user types
+    if (!self.hidePlaceholderOnFocus) {
+        if ([super.text length] > 0 && ![super.text isEqualToString:self.placeholder]) {
+            self.textColor = self.realTextColor;
+        }
+    }
+    // Update clear button visibility
+    [self updateClearButtonVisibility];
+}
+
+/// Update clear button visibility based on text content
+- (void)updateClearButtonVisibility {
+    if (self.clearButton) {
+        NSString *currentText = self.text; // Uses getter that returns empty string for placeholder
+        self.clearButton.hidden = (currentText.length == 0);
+    }
+}
+
+/// Clear button tapped
+- (void)clearButtonTapped:(UIButton *)sender {
+    self.text = @"";
+    [self updateClearButtonVisibility];
+    // Notify about text change
+    [[NSNotificationCenter defaultCenter] postNotificationName:UITextViewTextDidChangeNotification object:self];
 }
 
 /// Edit end method
@@ -258,6 +305,10 @@ NSMutableDictionary *mobileInputList = nil;
     if ([self.realText isEqualToString:@""] || self.realText == nil) {
         super.text = self.placeholder;
         self.textColor = self.placeholderColor;
+    }
+    // Hide clear button when not editing
+    if (self.clearButton) {
+        self.clearButton.hidden = YES;
     }
 }
 
@@ -608,6 +659,11 @@ NSMutableDictionary *mobileInputList = nil;
     NSString *customFont = [data valueForKey:@"font"];
     BOOL withDoneButton = [[data valueForKey:@"with_done_button"] boolValue];
     BOOL withClearButton = [[data valueForKey:@"with_clear_button"] boolValue];
+    // Default to YES (iOS behavior) unless explicitly set to NO (Unity-like behavior)
+    BOOL hidePlaceholderOnFocus = YES;
+    if ([data valueForKey:@"hide_placeholder_on_focus"] != nil) {
+        hidePlaceholderOnFocus = [[data valueForKey:@"hide_placeholder_on_focus"] boolValue];
+    }
     isMultiline = [[data valueForKey:@"multiline"] boolValue];
     BOOL isChangeCaret = [[data valueForKey:@"caret_color"] boolValue];
     BOOL autoCorrection = NO;
@@ -753,6 +809,31 @@ NSMutableDictionary *mobileInputList = nil;
         textView.contentInset = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0f);
         textView.placeholder = placeholder;
         textView.placeholderColor = placeHolderColor;
+        textView.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
+        if (withClearButton) {
+            // Create clear button for UITextView (similar to UITextField's clearButtonMode)
+            CGFloat buttonSize = height * 0.6;
+            CGFloat buttonPadding = (height - buttonSize) / 2;
+            UIButton *clearBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+            clearBtn.frame = CGRectMake(width - buttonSize - buttonPadding, buttonPadding, buttonSize, buttonSize);
+            clearBtn.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
+            // Use SF Symbol for iOS 13+ or fallback
+            if (@available(iOS 13.0, *)) {
+                UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:buttonSize * 0.5 weight:UIImageSymbolWeightMedium];
+                UIImage *clearImage = [UIImage systemImageNamed:@"xmark.circle.fill" withConfiguration:config];
+                [clearBtn setImage:clearImage forState:UIControlStateNormal];
+                clearBtn.tintColor = [UIColor systemGray3Color];
+            } else {
+                [clearBtn setTitle:@"✕" forState:UIControlStateNormal];
+                [clearBtn setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+            }
+            [clearBtn addTarget:textView action:@selector(clearButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+            clearBtn.hidden = YES; // Start hidden, will show when editing with text
+            textView.clearButton = clearBtn;
+            [textView addSubview:clearBtn];
+            // Adjust text container inset to make room for clear button
+            textView.textContainerInset = UIEdgeInsetsMake(0, 0, 0, buttonSize + buttonPadding);
+        }
         if (isChangeCaret) {
             textView.tintColor = caretColor;
         }
