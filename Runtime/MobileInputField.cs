@@ -220,6 +220,13 @@ namespace UMI {
         /// </summary>
         public UnityEvent OnReturnPressedEvent = null;
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Simulated keyboard height in pixels for Editor testing
+        /// </summary>
+        public static int EditorKeyboardHeight = 600;
+#endif
+
         /// <summary>
         /// Mobile input creation flag
         /// </summary>
@@ -282,6 +289,11 @@ namespace UMI {
                 throw new MissingComponentException();
             }
             _inputObjectText = _inputObject.textComponent;
+#if UNITY_EDITOR
+            // In Editor, subscribe to TMP_InputField's select/deselect events to simulate native behavior
+            _inputObject.onSelect.AddListener(OnEditorSelect);
+            _inputObject.onDeselect.AddListener(OnEditorDeselect);
+#endif
         }
 
         /// <summary>
@@ -321,8 +333,35 @@ namespace UMI {
         /// </summary>
         protected override void OnDestroy() {
             RemoveNative();
+#if UNITY_EDITOR
+            // Unsubscribe from Editor events
+            if (_inputObject != null) {
+                _inputObject.onSelect.RemoveListener(OnEditorSelect);
+                _inputObject.onDeselect.RemoveListener(OnEditorDeselect);
+            }
+#endif
             base.OnDestroy();
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor-only: Called when TMP_InputField is selected
+        /// Simulates native OnFocusChanged and keyboard show events
+        /// </summary>
+        void OnEditorSelect(string text) {
+            OnFocusChanged(true);
+            MobileInput.OnKeyboardAction(true, EditorKeyboardHeight);
+        }
+
+        /// <summary>
+        /// Editor-only: Called when TMP_InputField is deselected
+        /// Simulates native OnFocusChanged and keyboard hide events
+        /// </summary>
+        void OnEditorDeselect(string text) {
+            OnFocusChanged(false);
+            MobileInput.OnKeyboardAction(false, 0);
+        }
+#endif
 
 #if UNITY_ANDROID
         /// <summary>
