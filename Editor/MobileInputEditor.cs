@@ -75,12 +75,14 @@ namespace UMI {
             GUILayout.Space(SPACE);
             _target.IsManualHideControl = GUILayout.Toggle(_target.IsManualHideControl, " Manual hide control");
             GUILayout.Space(SPACE);
-#if UNITY_IOS
+#if UNITY_IOS || UNITY_EDITOR
+            GUILayout.Label("iOS Options:");
+            GUILayout.Space(SPACE);
             _target.IsWithDoneButton = GUILayout.Toggle(_target.IsWithDoneButton, " Show \"Done\" button");
             GUILayout.Space(SPACE);
             _target.IsWithClearButton = GUILayout.Toggle(_target.IsWithClearButton, " Show \"Clear\" button");
             GUILayout.Space(SPACE);
-            _target.HidePlaceholderOnFocus = GUILayout.Toggle(_target.HidePlaceholderOnFocus, " Hide placeholder on focus (iOS default)");
+            _target.HidePlaceholderOnFocus = GUILayout.Toggle(_target.HidePlaceholderOnFocus, " Hide placeholder on focus");
             GUILayout.Space(OFFSET);
 #endif
             EditorGUILayout.PropertyField(_onReturnPressedEvent);
