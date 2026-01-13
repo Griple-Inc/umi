@@ -5,6 +5,11 @@ using TMPro;
 using UnityEngine;
 using NiceJson;
 using UnityEngine.Events;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
+#endif
 
 namespace UMI {
 
@@ -316,6 +321,9 @@ namespace UMI {
         /// Show native on enable
         /// </summary>
         void OnEnable() {
+#if ENABLE_INPUT_SYSTEM && !UNITY_EDITOR
+            EnhancedTouchSupport.Enable();
+#endif
             if (_isMobileInputCreated) {
                 SetRectNative(this._inputObjectText.rectTransform);
                 SetVisible(true);
@@ -328,6 +336,9 @@ namespace UMI {
         /// Hide native on disable
         /// </summary>
         void OnDisable() {
+#if ENABLE_INPUT_SYSTEM && !UNITY_EDITOR
+            EnhancedTouchSupport.Disable();
+#endif
             if (_isMobileInputCreated) {
                 SetFocus(false);
                 SetVisible(false);
@@ -461,25 +472,52 @@ namespace UMI {
 #endif
             if (_inputObject != null && _isMobileInputCreated) {
 #if !UNITY_EDITOR
-                var touchCount = Input.touchCount;
-                if (touchCount > 0) {
-                    var inputRect = this._inputObjectText.rectTransform.rect;
-                    for (var i = 0; i < touchCount; i++) {
-                        if (!inputRect.Contains(Input.touches[i].position)) {
-#if UMI_DEBUG
-                            Debug.Log($"[UMI] manual hide control: {IsManualHideControl}");
-#endif                             
-                            if (!IsManualHideControl) {
-                                Hide();
-                            }
-                            return;
-                        }
-                    }
-                }
+                CheckTouchOutside();
 #endif
                 SetRectNative(_inputObjectText.rectTransform);
             }
         }
+
+#if !UNITY_EDITOR
+        /// <summary>
+        /// Check if touch is outside the input field and hide if needed
+        /// Uses new Input System by default, falls back to legacy Input if not available
+        /// </summary>
+        void CheckTouchOutside() {
+            var inputRect = _inputObjectText.rectTransform.rect;
+#if ENABLE_INPUT_SYSTEM
+            var activeTouches = Touch.activeTouches;
+            if (activeTouches.Count > 0) {
+                foreach (var touch in activeTouches) {
+                    if (!inputRect.Contains(touch.screenPosition)) {
+#if UMI_DEBUG
+                        Debug.Log($"[UMI] manual hide control: {IsManualHideControl}");
+#endif
+                        if (!IsManualHideControl) {
+                            Hide();
+                        }
+                        return;
+                    }
+                }
+            }
+#else
+            var touchCount = Input.touchCount;
+            if (touchCount > 0) {
+                for (var i = 0; i < touchCount; i++) {
+                    if (!inputRect.Contains(Input.touches[i].position)) {
+#if UMI_DEBUG
+                        Debug.Log($"[UMI] manual hide control: {IsManualHideControl}");
+#endif
+                        if (!IsManualHideControl) {
+                            Hide();
+                        }
+                        return;
+                    }
+                }
+            }
+#endif
+        }
+#endif
 
         /// <summary>
         /// Prepare config
