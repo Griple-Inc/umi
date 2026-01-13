@@ -580,6 +580,27 @@ namespace UMI {
         }
 
         /// <summary>
+        /// Pre-warm the keyboard by briefly focusing and unfocusing.
+        /// Call this during scene initialization to avoid lag on first user interaction.
+        /// </summary>
+        public void PrewarmKeyboard() {
+            if (!_isMobileInputCreated) {
+                return;
+            }
+            StartCoroutine(PrewarmKeyboardProcess());
+        }
+
+        /// <summary>
+        /// Coroutine to prewarm keyboard
+        /// </summary>
+        IEnumerator PrewarmKeyboardProcess() {
+            SetFocus(true);
+            yield return null;
+            yield return null;
+            SetFocus(false);
+        }
+
+        /// <summary>
         /// Coroutine for send, so its not freeze main thread
         /// </summary>
         /// <param name="data">JSON</param>
