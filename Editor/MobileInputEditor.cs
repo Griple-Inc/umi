@@ -79,6 +79,8 @@ namespace UMI {
             _target.IsWithDoneButton = GUILayout.Toggle(_target.IsWithDoneButton, " Show \"Done\" button");
             GUILayout.Space(SPACE);
             _target.IsWithClearButton = GUILayout.Toggle(_target.IsWithClearButton, " Show \"Clear\" button");
+            GUILayout.Space(SPACE);
+            _target.HidePlaceholderOnFocus = GUILayout.Toggle(_target.HidePlaceholderOnFocus, " Hide placeholder on focus (iOS default)");
             GUILayout.Space(OFFSET);
 #endif
             EditorGUILayout.PropertyField(_onReturnPressedEvent);
