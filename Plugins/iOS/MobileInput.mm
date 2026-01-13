@@ -294,8 +294,10 @@ NSMutableDictionary *mobileInputList = nil;
 - (void)clearButtonTapped:(UIButton *)sender {
     self.text = @"";
     [self updateClearButtonVisibility];
-    // Notify about text change
-    [[NSNotificationCenter defaultCenter] postNotificationName:UITextViewTextDidChangeNotification object:self];
+    // Notify delegate (MobileInput) about text change so it sends to Unity
+    if ([self.delegate respondsToSelector:@selector(textViewDidChange:)]) {
+        [self.delegate textViewDidChange:self];
+    }
 }
 
 /// Edit end method
@@ -812,8 +814,9 @@ NSMutableDictionary *mobileInputList = nil;
         textView.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
         if (withClearButton) {
             // Create clear button for UITextView (similar to UITextField's clearButtonMode)
-            CGFloat buttonSize = height * 0.6;
-            CGFloat buttonPadding = (height - buttonSize) / 2;
+            // Use minimum 24pt size for visibility, max 60% of height
+            CGFloat buttonSize = MAX(24.0, MIN(height * 0.6, 32.0));
+            CGFloat buttonPadding = 8.0;
             UIButton *clearBtn = [UIButton buttonWithType:UIButtonTypeCustom];
             clearBtn.frame = CGRectMake(width - buttonSize - buttonPadding, buttonPadding, buttonSize, buttonSize);
             clearBtn.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
