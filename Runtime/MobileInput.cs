@@ -52,7 +52,7 @@ namespace UMI {
         }
 
         /// <summary>
-        /// Send data to plugin
+        /// Send data to plugin input
         /// </summary>
         /// <param name="data">Data</param>
         protected void Execute(JsonObject data) {
@@ -175,7 +175,7 @@ namespace UMI {
         /// </summary>
         static bool _isInited = false;
 
-#if UNITY_IOS
+#if UNITY_IOS && !UNITY_EDITOR
         /// <summary>
         /// Send data to plugin input
         /// </summary>
@@ -387,7 +387,7 @@ namespace UMI {
             using (var plugin = new AndroidJavaClass(PLUGIN_PACKAGE)) {
                 plugin.CallStatic("execute", id, json);
             }
-#elif UNITY_IOS
+#elif UNITY_IOS && !UNITY_EDITOR
             inputExecute(id, json);
 #endif
         }
@@ -427,7 +427,7 @@ namespace UMI {
             using (var plugin = new AndroidJavaClass(PLUGIN_PACKAGE)) {
                 plugin.CallStatic("init", data.ToJsonString());
             }
-#elif UNITY_IOS
+#elif UNITY_IOS && !UNITY_EDITOR
             inputInit(data.ToJsonString());
 #endif
         }
@@ -443,7 +443,7 @@ namespace UMI {
             using (var plugin = new AndroidJavaClass(PLUGIN_PACKAGE)) {
                 plugin.CallStatic("destroy");
             }
-#elif UNITY_IOS
+#elif UNITY_IOS && !UNITY_EDITOR
             inputDestroy();
 #endif
         }
@@ -452,7 +452,7 @@ namespace UMI {
         /// Check screen scale factor (iOS)
         /// </summary>
         public static float GetScreenScale() {
-#if UNITY_IOS
+#if UNITY_IOS && !UNITY_EDITOR
             return scaleFactor();
 #else
             return 1f;
