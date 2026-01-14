@@ -393,6 +393,14 @@ namespace UMI {
         }
 
         /// <summary>
+        /// Auto-initialize plugin at app startup
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoInit() {
+            Init();
+        }
+
+        /// <summary>
         /// Init plugin
         /// </summary>
         public static void Init() {
