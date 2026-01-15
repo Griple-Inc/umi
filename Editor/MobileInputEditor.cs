@@ -1,94 +1,148 @@
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UMI {
 
     /// <summary>
-    /// Custom editor for MobileInput
+    /// Custom editor for MobileInput using UI Toolkit
     /// </summary>
     [CustomEditor(typeof(MobileInputField))]
     public class MobileInputEditor : Editor {
 
-        /// <summary>
-        /// Labels size
-        /// </summary>
-        const int LABEL_SIZE = 120;
+        public override VisualElement CreateInspectorGUI() {
+            var root = new VisualElement();
+            root.style.marginTop = 8;
 
-        /// <summary>
-        /// Offset size
-        /// </summary>
-        const int OFFSET = 20;
+            // Return Key Type Section
+            var returnKeySection = new VisualElement();
+            returnKeySection.style.marginBottom = 12;
 
-        /// <summary>
-        /// Space between labels
-        /// </summary>
-        const int SPACE = 5;
+            var returnKeyLabel = new Label("Return Button Type");
+            returnKeyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            returnKeyLabel.style.marginBottom = 4;
+            returnKeySection.Add(returnKeyLabel);
 
-        /// <summary>
-        /// MobileInput target
-        /// </summary>
-        MobileInputField _target;
+            var returnKeyField = new EnumField("Return Key", ((MobileInputField)target).ReturnKey);
+            returnKeyField.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Return Key Type");
+                ((MobileInputField)target).ReturnKey = (MobileInputField.ReturnKeyType)evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            returnKeySection.Add(returnKeyField);
+            root.Add(returnKeySection);
 
-        /// <summary>
-        /// Serialized target object
-        /// </summary>
-        SerializedObject _object;
+            // Options Section
+            var optionsSection = new VisualElement();
+            optionsSection.style.marginBottom = 12;
 
-        /// <summary>
-        /// Return press event
-        /// </summary>
-        SerializedProperty _onReturnPressedEvent;
+            var optionsLabel = new Label("Options");
+            optionsLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            optionsLabel.style.marginBottom = 4;
+            optionsSection.Add(optionsLabel);
 
-        /// <summary>
-        /// Init data
-        /// </summary>
-        void OnEnable() {
-            _target = (MobileInputField)target;
-            _object = new SerializedObject(target);
-            _onReturnPressedEvent = _object.FindProperty("OnReturnPressedEvent");
-        }
+            var bgColorField = new ColorField("Background Color") {
+                value = ((MobileInputField)target).BackgroundColor
+            };
+            bgColorField.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Background Color");
+                ((MobileInputField)target).BackgroundColor = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            optionsSection.Add(bgColorField);
 
-        /// <summary>
-        /// Draw inspector
-        /// </summary>
-        public override void OnInspectorGUI() {
-            _object.Update();
-            EditorGUI.BeginChangeCheck();
-            GUILayout.Space(OFFSET);
-            GUILayout.Label("Select type for Return button:");
-            _target.ReturnKey = (MobileInputField.ReturnKeyType)GUILayout.Toolbar((int)_target.ReturnKey, new string[] { "Default", "Next", "Done", "Search" });
-            GUILayout.Space(OFFSET);
-            GUILayout.Label("Options:");
-            GUILayout.Space(SPACE);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Background:");
-            _target.BackgroundColor = EditorGUILayout.ColorField(_target.BackgroundColor);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Custom font name:", GUILayout.MaxWidth(LABEL_SIZE));
-            _target.CustomFont = GUILayout.TextField(_target.CustomFont);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Keyboard language:", GUILayout.MaxWidth(LABEL_SIZE));
-            _target.KeyboardLanguage = GUILayout.TextField(_target.KeyboardLanguage);
-            GUILayout.EndHorizontal();            
-            GUILayout.Space(SPACE);
-            _target.IsManualHideControl = GUILayout.Toggle(_target.IsManualHideControl, " Manual hide control");
-            GUILayout.Space(SPACE);
-#if UNITY_IOS || UNITY_EDITOR
-            GUILayout.Label("iOS Options:");
-            GUILayout.Space(SPACE);
-            _target.IsWithDoneButton = GUILayout.Toggle(_target.IsWithDoneButton, " Show \"Done\" button");
-            GUILayout.Space(SPACE);
-            _target.IsWithClearButton = GUILayout.Toggle(_target.IsWithClearButton, " Show \"Clear\" button");
-            GUILayout.Space(SPACE);
-            _target.HidePlaceholderOnFocus = GUILayout.Toggle(_target.HidePlaceholderOnFocus, " Hide placeholder on focus");
-            GUILayout.Space(OFFSET);
-#endif
-            EditorGUILayout.PropertyField(_onReturnPressedEvent);
-            if (EditorGUI.EndChangeCheck()) {
-                _object.ApplyModifiedProperties();
-            }
+            var customFontField = new TextField("Custom Font Name") {
+                value = ((MobileInputField)target).CustomFont
+            };
+            customFontField.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Custom Font");
+                ((MobileInputField)target).CustomFont = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            optionsSection.Add(customFontField);
+
+            var keyboardLangField = new TextField("Keyboard Language") {
+                value = ((MobileInputField)target).KeyboardLanguage
+            };
+            keyboardLangField.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Keyboard Language");
+                ((MobileInputField)target).KeyboardLanguage = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            optionsSection.Add(keyboardLangField);
+
+            var manualHideToggle = new Toggle("Manual Hide Control") {
+                value = ((MobileInputField)target).IsManualHideControl
+            };
+            manualHideToggle.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Manual Hide Control");
+                ((MobileInputField)target).IsManualHideControl = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            optionsSection.Add(manualHideToggle);
+
+            root.Add(optionsSection);
+
+            // Platform Options Section
+            var platformSection = new VisualElement();
+            platformSection.style.marginBottom = 12;
+
+            var platformLabel = new Label("Platform Options");
+            platformLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            platformLabel.style.marginBottom = 4;
+            platformSection.Add(platformLabel);
+
+            var doneButtonToggle = new Toggle("Show \"Done\" Button (iOS)") {
+                value = ((MobileInputField)target).IsWithDoneButton
+            };
+            doneButtonToggle.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Done Button");
+                ((MobileInputField)target).IsWithDoneButton = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            platformSection.Add(doneButtonToggle);
+
+            var clearButtonToggle = new Toggle("Show \"Clear\" Button") {
+                value = ((MobileInputField)target).IsWithClearButton
+            };
+            clearButtonToggle.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Clear Button");
+                ((MobileInputField)target).IsWithClearButton = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            platformSection.Add(clearButtonToggle);
+
+            var hidePlaceholderToggle = new Toggle("Hide Placeholder On Focus") {
+                value = ((MobileInputField)target).HidePlaceholderOnFocus,
+                tooltip = "When enabled (default), placeholder hides when input is focused. When disabled, placeholder stays visible until user types (Unity-like behavior)."
+            };
+            hidePlaceholderToggle.RegisterValueChangedCallback(evt => {
+                Undo.RecordObject(target, "Change Hide Placeholder On Focus");
+                ((MobileInputField)target).HidePlaceholderOnFocus = evt.newValue;
+                EditorUtility.SetDirty(target);
+            });
+            platformSection.Add(hidePlaceholderToggle);
+
+            root.Add(platformSection);
+
+            // Events Section
+            var eventsSection = new VisualElement();
+            eventsSection.style.marginBottom = 8;
+
+            var eventsLabel = new Label("Events");
+            eventsLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            eventsLabel.style.marginBottom = 4;
+            eventsSection.Add(eventsLabel);
+
+            var returnPressedProperty = serializedObject.FindProperty("OnReturnPressedEvent");
+            var returnPressedField = new PropertyField(returnPressedProperty);
+            returnPressedField.Bind(serializedObject);
+            eventsSection.Add(returnPressedField);
+
+            root.Add(eventsSection);
+
+            return root;
         }
     }
 }
