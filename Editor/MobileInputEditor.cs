@@ -13,136 +13,48 @@ namespace UMI {
 
         public override VisualElement CreateInspectorGUI() {
             var root = new VisualElement();
-            root.style.marginTop = 8;
 
             // Return Key Type Section
-            var returnKeySection = new VisualElement();
-            returnKeySection.style.marginBottom = 12;
-
-            var returnKeyLabel = new Label("Return Button Type");
-            returnKeyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            returnKeyLabel.style.marginBottom = 4;
-            returnKeySection.Add(returnKeyLabel);
-
-            var returnKeyField = new EnumField("Return Key", ((MobileInputField)target).ReturnKey);
-            returnKeyField.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Return Key Type");
-                ((MobileInputField)target).ReturnKey = (MobileInputField.ReturnKeyType)evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            returnKeySection.Add(returnKeyField);
-            root.Add(returnKeySection);
+            CreateSectionHeader(root, "Return Button Type");
+            root.Add(CreatePropertyField("ReturnKey", "Return Key"));
 
             // Options Section
-            var optionsSection = new VisualElement();
-            optionsSection.style.marginBottom = 12;
-
-            var optionsLabel = new Label("Options");
-            optionsLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            optionsLabel.style.marginBottom = 4;
-            optionsSection.Add(optionsLabel);
-
-            var bgColorField = new ColorField("Background Color") {
-                value = ((MobileInputField)target).BackgroundColor
-            };
-            bgColorField.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Background Color");
-                ((MobileInputField)target).BackgroundColor = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            optionsSection.Add(bgColorField);
-
-            var customFontField = new TextField("Custom Font Name") {
-                value = ((MobileInputField)target).CustomFont
-            };
-            customFontField.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Custom Font");
-                ((MobileInputField)target).CustomFont = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            optionsSection.Add(customFontField);
-
-            var keyboardLangField = new TextField("Keyboard Language") {
-                value = ((MobileInputField)target).KeyboardLanguage
-            };
-            keyboardLangField.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Keyboard Language");
-                ((MobileInputField)target).KeyboardLanguage = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            optionsSection.Add(keyboardLangField);
-
-            var manualHideToggle = new Toggle("Manual Hide Control") {
-                value = ((MobileInputField)target).IsManualHideControl
-            };
-            manualHideToggle.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Manual Hide Control");
-                ((MobileInputField)target).IsManualHideControl = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            optionsSection.Add(manualHideToggle);
-
-            root.Add(optionsSection);
+            CreateSectionHeader(root, "Options");
+            root.Add(CreatePropertyField("BackgroundColor", "Background Color"));
+            root.Add(CreatePropertyField("CustomFont", "Custom Font Name"));
+            root.Add(CreatePropertyField("KeyboardLanguage", "Keyboard Language"));
+            root.Add(CreatePropertyField("IsManualHideControl", "Manual Hide Control"));
 
             // Platform Options Section
-            var platformSection = new VisualElement();
-            platformSection.style.marginBottom = 12;
+            CreateSectionHeader(root, "Platform Options");
+            root.Add(CreatePropertyField("IsWithDoneButton", "Show \"Done\" Button (iOS)"));
+            root.Add(CreatePropertyField("IsWithClearButton", "Show \"Clear\" Button"));
 
-            var platformLabel = new Label("Platform Options");
-            platformLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            platformLabel.style.marginBottom = 4;
-            platformSection.Add(platformLabel);
-
-            var doneButtonToggle = new Toggle("Show \"Done\" Button (iOS)") {
-                value = ((MobileInputField)target).IsWithDoneButton
-            };
-            doneButtonToggle.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Done Button");
-                ((MobileInputField)target).IsWithDoneButton = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            platformSection.Add(doneButtonToggle);
-
-            var clearButtonToggle = new Toggle("Show \"Clear\" Button") {
-                value = ((MobileInputField)target).IsWithClearButton
-            };
-            clearButtonToggle.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Clear Button");
-                ((MobileInputField)target).IsWithClearButton = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            platformSection.Add(clearButtonToggle);
-
-            var hidePlaceholderToggle = new Toggle("Hide Placeholder On Focus") {
-                value = ((MobileInputField)target).HidePlaceholderOnFocus,
-                tooltip = "When enabled (default), placeholder hides when input is focused. When disabled, placeholder stays visible until user types (Unity-like behavior)."
-            };
-            hidePlaceholderToggle.RegisterValueChangedCallback(evt => {
-                Undo.RecordObject(target, "Change Hide Placeholder On Focus");
-                ((MobileInputField)target).HidePlaceholderOnFocus = evt.newValue;
-                EditorUtility.SetDirty(target);
-            });
-            platformSection.Add(hidePlaceholderToggle);
-
-            root.Add(platformSection);
+            var hidePlaceholderField = CreatePropertyField("HidePlaceholderOnFocus", "Hide Placeholder On Focus");
+            hidePlaceholderField.tooltip = "When enabled (default), placeholder hides when input is focused. When disabled, placeholder stays visible until user types (Unity-like behavior).";
+            root.Add(hidePlaceholderField);
 
             // Events Section
-            var eventsSection = new VisualElement();
-            eventsSection.style.marginBottom = 8;
-
-            var eventsLabel = new Label("Events");
-            eventsLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            eventsLabel.style.marginBottom = 4;
-            eventsSection.Add(eventsLabel);
-
-            var returnPressedProperty = serializedObject.FindProperty("OnReturnPressedEvent");
-            var returnPressedField = new PropertyField(returnPressedProperty);
-            returnPressedField.Bind(serializedObject);
-            eventsSection.Add(returnPressedField);
-
-            root.Add(eventsSection);
+            CreateSectionHeader(root, "Events");
+            root.Add(CreatePropertyField("OnReturnPressedEvent"));
 
             return root;
+        }
+
+        VisualElement CreateSectionHeader(VisualElement parent, string title) {
+            var header = new Label(title);
+            header.style.unityFontStyleAndWeight = FontStyle.Bold;
+            header.style.marginTop = 10;
+            header.style.marginBottom = 2;
+            parent.Add(header);
+            return header;
+        }
+
+        PropertyField CreatePropertyField(string propertyName, string label = null) {
+            var property = serializedObject.FindProperty(propertyName);
+            var field = label != null ? new PropertyField(property, label) : new PropertyField(property);
+            field.Bind(serializedObject);
+            return field;
         }
     }
 }
