@@ -470,8 +470,11 @@ public class MobileInput {
             final MobileInput input = this;
             edit.setOnFocusChangeListener((v, isFocus) -> {
                 if (isFocus) {
-                    // Handle Unity-like placeholder behavior on focus
-                    if (!hidePlaceholderOnFocus && placeholderText.length() > 0) {
+                    if (hidePlaceholderOnFocus) {
+                        // Default UMI behavior: hide placeholder on focus
+                        edit.setHint("");
+                    } else if (placeholderText.length() > 0) {
+                        // Unity-like behavior: show placeholder as text until user types
                         String currentText = edit.getText().toString();
                         if (currentText.isEmpty() || isShowingPlaceholderAsText) {
                             // Hide native hint and show placeholder as actual text
@@ -484,7 +487,14 @@ public class MobileInput {
                     }
                 } else {
                     // Handle end of editing
-                    if (!hidePlaceholderOnFocus) {
+                    if (hidePlaceholderOnFocus) {
+                        // Restore native hint if text is empty
+                        String currentText = edit.getText().toString();
+                        if (currentText.isEmpty()) {
+                            edit.setHint(placeholderText);
+                            edit.setHintTextColor(placeholderColor);
+                        }
+                    } else {
                         String currentText = edit.getText().toString();
                         if (isShowingPlaceholderAsText || currentText.isEmpty() || currentText.equals(placeholderText)) {
                             // Restore native hint and clear text

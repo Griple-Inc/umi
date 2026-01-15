@@ -906,6 +906,12 @@ NSMutableDictionary *mobileInputList = nil;
         textView.placeholder = placeholder;
         textView.placeholderColor = placeHolderColor;
         textView.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
+        // Initialize placeholder display - show placeholder as text initially
+        // This is needed for both iOS-style and Unity-style behavior
+        if (placeholder.length > 0) {
+            textView.text = placeholder;
+            textView.textColor = placeHolderColor;
+        }
         if (withClearButton) {
             // Create clear button for UITextView (similar to UITextField's clearButtonMode)
             // Use minimum 24pt size for visibility, max 60% of height
