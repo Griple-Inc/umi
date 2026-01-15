@@ -33,11 +33,29 @@ UIViewController *mainViewController = nil;
 /// Dict with inputs
 NSMutableDictionary *mobileInputList = nil;
 
-/// Custom textfield with overridden input mode
+/// Custom textfield with overridden input mode and Unity-like placeholder support
 @interface CustomTextField : UITextField
 
 /// Language code
 @property (nonatomic, strong) NSString *languageCode;
+
+/// Hide placeholder on focus (YES = iOS default, NO = Unity-like behavior)
+@property (nonatomic, assign) BOOL hidePlaceholderOnFocus;
+
+/// Stored placeholder text for Unity-like behavior
+@property (nonatomic, strong) NSString *placeholderText;
+
+/// Stored placeholder color
+@property (nonatomic, strong) UIColor *placeholderTextColor;
+
+/// Real text color
+@property (nonatomic, strong) UIColor *realTextColor;
+
+/// Flag to track if placeholder is currently displayed as text
+@property (nonatomic, assign) BOOL isShowingPlaceholderAsText;
+
+/// Original attributed placeholder for iOS-style behavior
+@property (nonatomic, strong) NSAttributedString *originalAttributedPlaceholder;
 @end
 
 /// Interface for placeholder
@@ -128,6 +146,30 @@ NSMutableDictionary *mobileInputList = nil;
 /// Custom textfield implemenation
 @implementation CustomTextField
 
+@synthesize hidePlaceholderOnFocus;
+@synthesize placeholderText;
+@synthesize placeholderTextColor;
+@synthesize realTextColor;
+@synthesize isShowingPlaceholderAsText;
+@synthesize originalAttributedPlaceholder;
+
+/// Initialize with frame
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.hidePlaceholderOnFocus = YES; // Default iOS behavior
+        self.isShowingPlaceholderAsText = NO;
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textFieldDidBeginEditing:) name:UITextFieldTextDidBeginEditingNotification object:self];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textFieldDidEndEditing:) name:UITextFieldTextDidEndEditingNotification object:self];
+    }
+    return self;
+}
+
+/// Destructor
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
 /// Set language for keyboard
 /// - Parameter languageCode: ISO code
 - (void)setLanguageCode:(NSString *)languageCode {
@@ -151,6 +193,58 @@ NSMutableDictionary *mobileInputList = nil;
         }
     }
     return [super textInputMode];
+}
+
+/// Handle begin editing - show placeholder as text if Unity-like behavior
+- (void)textFieldDidBeginEditing:(NSNotification *)notification {
+    if (!self.hidePlaceholderOnFocus && self.placeholderText.length > 0) {
+        // If no real text, show placeholder as actual text
+        if (self.text.length == 0 || self.isShowingPlaceholderAsText) {
+            // Hide the native placeholder
+            self.attributedPlaceholder = nil;
+            // Show placeholder as text with placeholder color
+            super.text = self.placeholderText;
+            super.textColor = self.placeholderTextColor;
+            self.isShowingPlaceholderAsText = YES;
+        }
+    }
+}
+
+/// Handle end editing - restore placeholder if text is empty
+- (void)textFieldDidEndEditing:(NSNotification *)notification {
+    if (!self.hidePlaceholderOnFocus) {
+        if (self.isShowingPlaceholderAsText || self.text.length == 0) {
+            // Restore native placeholder and clear text
+            super.text = @"";
+            super.textColor = self.realTextColor;
+            self.attributedPlaceholder = self.originalAttributedPlaceholder;
+            self.isShowingPlaceholderAsText = NO;
+        }
+    }
+}
+
+/// Override text getter to return empty string when showing placeholder as text
+- (NSString *)text {
+    if (self.isShowingPlaceholderAsText) {
+        return @"";
+    }
+    return [super text];
+}
+
+/// Override text setter
+- (void)setText:(NSString *)text {
+    if (text.length > 0 && ![text isEqualToString:self.placeholderText]) {
+        self.isShowingPlaceholderAsText = NO;
+        super.textColor = self.realTextColor;
+    }
+    [super setText:text];
+}
+
+/// Clear placeholder display and prepare for real text input
+- (void)clearPlaceholderAndSetText:(NSString *)text {
+    self.isShowingPlaceholderAsText = NO;
+    super.textColor = self.realTextColor;
+    super.text = text;
 }
 
 @end
@@ -861,6 +955,7 @@ NSMutableDictionary *mobileInputList = nil;
         textField.tag = inputId;
         textField.text = @"";
         textField.textColor = textColor;
+        textField.realTextColor = textColor; // Store for placeholder handling
         textField.backgroundColor = backgroundColor;
         textField.opaque = NO;
         if (isChangeCaret) {
@@ -879,7 +974,12 @@ NSMutableDictionary *mobileInputList = nil;
         }
         NSMutableParagraphStyle *setting = [[NSMutableParagraphStyle alloc] init];
         setting.alignment = textAlign;
-        textField.attributedPlaceholder = [[NSAttributedString alloc] initWithString:placeholder attributes:@{NSForegroundColorAttributeName: placeHolderColor, NSParagraphStyleAttributeName : setting}];
+        NSAttributedString *attrPlaceholder = [[NSAttributedString alloc] initWithString:placeholder attributes:@{NSForegroundColorAttributeName: placeHolderColor, NSParagraphStyleAttributeName : setting}];
+        textField.attributedPlaceholder = attrPlaceholder;
+        textField.originalAttributedPlaceholder = attrPlaceholder; // Store for restoration
+        textField.placeholderText = placeholder;
+        textField.placeholderTextColor = placeHolderColor;
+        textField.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
         textField.delegate = self;
         if (keyType == UIKeyboardTypeEmailAddress) {
             textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
@@ -1010,6 +1110,22 @@ NSMutableDictionary *mobileInputList = nil;
 ///   - range: Range characters
 ///   - string: Replacement string
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
+    // Handle Unity-like placeholder behavior for single-line input
+    if ([textField isKindOfClass:[CustomTextField class]]) {
+        CustomTextField *customTextField = (CustomTextField *)textField;
+        // Check if placeholder is showing as text and user is typing (not deleting)
+        if (customTextField.isShowingPlaceholderAsText && string.length > 0) {
+            // Clear placeholder and set typed text
+            [customTextField clearPlaceholderAndSetText:string];
+            // Move cursor to end
+            UITextPosition *endPosition = [textField endOfDocument];
+            textField.selectedTextRange = [textField textRangeFromPosition:endPosition toPosition:endPosition];
+            // Notify about text change
+            [self textFieldDidChange:textField];
+            return NO; // Prevent default behavior
+        }
+    }
+
     if (range.length + range.location > textField.text.length) {
         return NO;
     }
@@ -1021,12 +1137,32 @@ NSMutableDictionary *mobileInputList = nil;
     }
 }
 
-/// Callback on text change for UITextView (multiline) - enforces character limit
+/// Callback on text change for UITextView (multiline) - enforces character limit and handles placeholder
 /// - Parameters:
 ///   - textView: TextView instance
 ///   - range: Range of characters
 ///   - text: Replacement text
 - (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
+    // Handle Unity-like placeholder behavior: when hidePlaceholderOnFocus is NO,
+    // the placeholder text stays visible on focus. When user types, we need to
+    // replace the placeholder with the typed text, not append to it.
+    if ([textView isKindOfClass:[PlaceholderTextView class]]) {
+        PlaceholderTextView *placeholderTextView = (PlaceholderTextView *)textView;
+        if (!placeholderTextView.hidePlaceholderOnFocus) {
+            NSString *currentText = [placeholderTextView realText];
+            // Check if placeholder is currently showing and user is typing (not deleting)
+            if ([currentText isEqualToString:placeholderTextView.placeholder] && text.length > 0) {
+                // Replace placeholder with the typed text
+                placeholderTextView.text = text;
+                // Move cursor to end
+                placeholderTextView.selectedRange = NSMakeRange(text.length, 0);
+                // Notify delegate about the change
+                [self textViewDidChange:textView];
+                return NO; // Prevent default behavior
+            }
+        }
+    }
+
     if (range.length + range.location > textView.text.length) {
         return NO;
     }

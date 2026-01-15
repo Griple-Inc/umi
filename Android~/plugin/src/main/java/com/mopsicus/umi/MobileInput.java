@@ -96,6 +96,31 @@ public class MobileInput {
     private boolean isCaretChange = false;
 
     /**
+     * Hide placeholder on focus (default true = Android behavior, false = Unity-like)
+     */
+    private boolean hidePlaceholderOnFocus = true;
+
+    /**
+     * Stored placeholder text for Unity-like behavior
+     */
+    private String placeholderText = "";
+
+    /**
+     * Stored placeholder color
+     */
+    private int placeholderColor = Color.GRAY;
+
+    /**
+     * Real text color
+     */
+    private int realTextColor = Color.BLACK;
+
+    /**
+     * Flag to track if placeholder is currently displayed as text
+     */
+    private boolean isShowingPlaceholderAsText = false;
+
+    /**
      * List of inputs
      */
     private static SparseArray<MobileInput> mobileInputList = null;
@@ -308,6 +333,11 @@ public class MobileInput {
             boolean multiline = data.getBoolean("multiline");
             caretColor = Color.argb(caretColor_a, caretColor_r, caretColor_g, caretColor_b);
             isCaretChange = data.getBoolean("caret_color");
+            // Read hide_placeholder_on_focus option (defaults to true = Android behavior)
+            hidePlaceholderOnFocus = data.optBoolean("hide_placeholder_on_focus", true);
+            placeholderText = placeHolder;
+            placeholderColor = Color.argb(placeHolderColor_a, placeHolderColor_r, placeHolderColor_g, placeHolderColor_b);
+            realTextColor = Color.argb(textColor_a, textColor_r, textColor_g, textColor_b);
             edit = new EditText(Plugin.activity.getApplicationContext());
             edit.setSingleLine(!multiline);
             edit.setId(this.id);
@@ -439,7 +469,32 @@ public class MobileInput {
             }
             final MobileInput input = this;
             edit.setOnFocusChangeListener((v, isFocus) -> {
-                if (!isFocus) {
+                if (isFocus) {
+                    // Handle Unity-like placeholder behavior on focus
+                    if (!hidePlaceholderOnFocus && placeholderText.length() > 0) {
+                        String currentText = edit.getText().toString();
+                        if (currentText.isEmpty() || isShowingPlaceholderAsText) {
+                            // Hide native hint and show placeholder as actual text
+                            edit.setHint("");
+                            edit.setText(placeholderText);
+                            edit.setTextColor(placeholderColor);
+                            edit.setSelection(0); // Put cursor at start
+                            isShowingPlaceholderAsText = true;
+                        }
+                    }
+                } else {
+                    // Handle end of editing
+                    if (!hidePlaceholderOnFocus) {
+                        String currentText = edit.getText().toString();
+                        if (isShowingPlaceholderAsText || currentText.isEmpty() || currentText.equals(placeholderText)) {
+                            // Restore native hint and clear text
+                            edit.setText("");
+                            edit.setTextColor(realTextColor);
+                            edit.setHint(placeholderText);
+                            edit.setHintTextColor(placeholderColor);
+                            isShowingPlaceholderAsText = false;
+                        }
+                    }
                     JSONObject editData = new JSONObject();
                     try {
                         editData.put("msg", TEXT_END_EDIT);
@@ -463,16 +518,27 @@ public class MobileInput {
                 sendData(focusData);
             });
             edit.addTextChangedListener(new TextWatcher() {
+                private boolean isReplacingPlaceholder = false;
+
                 public void afterTextChanged(Editable s) {
+                    // Skip if we're in the middle of replacing placeholder
+                    if (isReplacingPlaceholder) {
+                        return;
+                    }
+
                     JSONObject data = new JSONObject();
                     if (characterLimit > 0 && s.length() >= characterLimit + 1) {
                         s.delete(s.length() - 1, s.length());
                         edit.setText(s);
                         edit.setSelection(s.length());
                     }
+
+                    // Get actual text (empty if showing placeholder)
+                    String actualText = isShowingPlaceholderAsText ? "" : s.toString();
+
                     try {
                         data.put("msg", TEXT_CHANGE);
-                        data.put("text", s.toString());
+                        data.put("text", actualText);
                     } catch (JSONException e) {
                         if (Plugin.bridge.isDebug) {
                             Log.e("[UMI]", String.format("create change error: %s", e));
@@ -484,12 +550,35 @@ public class MobileInput {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                     // Auto-generated method stub
-
                 }
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    // Auto-generated method stub
+                    // Handle Unity-like placeholder: when user types while placeholder is showing
+                    if (isShowingPlaceholderAsText && count > 0 && !isReplacingPlaceholder) {
+                        String currentText = s.toString();
+                        // Check if text changed from placeholder (user typed something)
+                        if (!currentText.equals(placeholderText)) {
+                            isReplacingPlaceholder = true;
+                            // Extract only the newly typed characters
+                            // The typed character is at position 'start' to 'start + count'
+                            String typedText = "";
+                            if (start + count <= currentText.length()) {
+                                // Find the typed portion - it's the part that wasn't in placeholder
+                                // Since placeholder was fully selected or cursor was at start,
+                                // the new character should be at the beginning or inserted
+                                typedText = currentText.substring(start, start + count);
+                            }
+                            // Clear placeholder flag first
+                            isShowingPlaceholderAsText = false;
+                            // Set text color back to real color
+                            edit.setTextColor(realTextColor);
+                            // Replace with just the typed text
+                            edit.setText(typedText);
+                            edit.setSelection(typedText.length());
+                            isReplacingPlaceholder = false;
+                        }
+                    }
                 }
             });
             edit.setOnEditorActionListener((v, actionId, event) -> {
@@ -685,10 +774,14 @@ public class MobileInput {
     /**
      * Get text from MobileInput
      *
-     * @return Text in input
+     * @return Text in input (returns empty string if showing placeholder as text)
      */
     private String GetText() {
         if (edit != null) {
+            // Return empty string if placeholder is being displayed as text
+            if (isShowingPlaceholderAsText) {
+                return "";
+            }
             return edit.getText().toString();
         } else {
             return "";
