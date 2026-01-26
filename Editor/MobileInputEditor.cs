@@ -30,9 +30,17 @@ namespace UMI {
             root.Add(CreatePropertyField("IsWithDoneButton", "Show \"Done\" Button (iOS)"));
             root.Add(CreatePropertyField("IsWithClearButton", "Show \"Clear\" Button"));
 
+            var clearButtonSizeField = CreatePropertyField("ClearButtonSize", "Clear Button Size");
+            clearButtonSizeField.tooltip = "Size of the clear button in points. Set to 0 for auto-sizing based on input height.";
+            root.Add(clearButtonSizeField);
+
             var hidePlaceholderField = CreatePropertyField("HidePlaceholderOnFocus", "Hide Placeholder On Focus");
             hidePlaceholderField.tooltip = "When enabled (default), placeholder hides when input is focused. When disabled, placeholder stays visible until user types (Unity-like behavior).";
             root.Add(hidePlaceholderField);
+
+            var keyboardOffsetField = CreatePropertyField("KeyboardOffset", "Keyboard Offset");
+            keyboardOffsetField.tooltip = "Extra space in points between the input field and keyboard. Add this value to keyboard height when positioning your UI.";
+            root.Add(keyboardOffsetField);
 
             // Events Section
             CreateSectionHeader(root, "Events");

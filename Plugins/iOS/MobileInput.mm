@@ -91,7 +91,10 @@ NSMutableDictionary *mobileInputList = nil;
     
     /// Flat to check multiline input
     BOOL isMultiline;
-    
+
+    /// Extra space between input and keyboard
+    float keyboardOffset;
+
     /// Current edit component
     UIView *editView;
     
@@ -760,6 +763,10 @@ NSMutableDictionary *mobileInputList = nil;
     if ([data valueForKey:@"hide_placeholder_on_focus"] != nil) {
         hidePlaceholderOnFocus = [[data valueForKey:@"hide_placeholder_on_focus"] boolValue];
     }
+    // Clear button size (0 = auto)
+    float clearButtonSize = [[data valueForKey:@"clear_button_size"] floatValue];
+    // Keyboard offset (extra space between input and keyboard)
+    keyboardOffset = [[data valueForKey:@"keyboard_offset"] floatValue];
     isMultiline = [[data valueForKey:@"multiline"] boolValue];
     BOOL isChangeCaret = [[data valueForKey:@"caret_color"] boolValue];
     BOOL autoCorrection = NO;
@@ -914,8 +921,8 @@ NSMutableDictionary *mobileInputList = nil;
         }
         if (withClearButton) {
             // Create clear button for UITextView (similar to UITextField's clearButtonMode)
-            // Use minimum 24pt size for visibility, max 60% of height
-            CGFloat buttonSize = MAX(24.0, MIN(height * 0.6, 32.0));
+            // Use custom size if provided, otherwise auto-calculate
+            CGFloat buttonSize = (clearButtonSize > 0) ? clearButtonSize : MAX(24.0, MIN(height * 0.6, 32.0));
             CGFloat horizontalPadding = 8.0;
             CGFloat verticalCenter = (height - buttonSize) / 2.0;
             UIButton *clearBtn = [UIButton buttonWithType:UIButtonTypeCustom];

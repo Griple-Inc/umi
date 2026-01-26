@@ -212,6 +212,16 @@ namespace UMI {
         public bool HidePlaceholderOnFocus = false;
 
         /// <summary>
+        /// Size of the clear button in points (0 = auto size based on input height)
+        /// </summary>
+        public float ClearButtonSize = 0f;
+
+        /// <summary>
+        /// Extra space between the input field and keyboard in points
+        /// </summary>
+        public float KeyboardOffset = 0f;
+
+        /// <summary>
         /// Type for return button
         /// </summary>
         public ReturnKeyType ReturnKey = ReturnKeyType.Default;
@@ -698,6 +708,8 @@ namespace UMI {
             data["with_done_button"] = IsWithDoneButton;
             data["with_clear_button"] = IsWithClearButton;
             data["hide_placeholder_on_focus"] = HidePlaceholderOnFocus;
+            data["clear_button_size"] = InvariantCultureString(ClearButtonSize);
+            data["keyboard_offset"] = InvariantCultureString(KeyboardOffset);
             data["font"] = CustomFont;
             data["placeholder"] = _config.Placeholder;
             data["placeholder_color_r"] = InvariantCultureString(_config.PlaceholderColor.r);
