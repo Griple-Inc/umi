@@ -30,6 +30,9 @@
 /// Link to main view controller
 UIViewController *mainViewController = nil;
 
+/// Current keyboard offset from focused input
+static float currentKeyboardOffset = 0;
+
 /// Dict with inputs
 NSMutableDictionary *mobileInputList = nil;
 
@@ -545,7 +548,7 @@ NSMutableDictionary *mobileInputList = nil;
     NSDictionary *keyboardInfo = [notification userInfo];
     NSValue *keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
     CGRect rectKeyboardFrame = [keyboardFrameBegin CGRectValue];
-    CGFloat height = rectKeyboardFrame.size.height;
+    CGFloat height = rectKeyboardFrame.size.height + currentKeyboardOffset;
     NSMutableDictionary *data = [[NSMutableDictionary alloc] init];
     [data setValue:KEYBOARD_ACTION forKey:@"action"];
     [data setValue:[NSNumber numberWithBool:YES] forKey:@"show"];
@@ -930,12 +933,14 @@ NSMutableDictionary *mobileInputList = nil;
             clearBtn.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
             // Use SF Symbol for iOS 13+ or fallback
             if (@available(iOS 13.0, *)) {
-                UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:buttonSize * 0.5 weight:UIImageSymbolWeightMedium];
+                UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:buttonSize * 0.7 weight:UIImageSymbolWeightMedium];
                 UIImage *clearImage = [UIImage systemImageNamed:@"xmark.circle.fill" withConfiguration:config];
                 [clearBtn setImage:clearImage forState:UIControlStateNormal];
                 clearBtn.tintColor = [UIColor systemGray3Color];
+                clearBtn.contentMode = UIViewContentModeScaleAspectFit;
             } else {
                 [clearBtn setTitle:@"✕" forState:UIControlStateNormal];
+                clearBtn.titleLabel.font = [UIFont systemFontOfSize:buttonSize * 0.6];
                 [clearBtn setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
             }
             [clearBtn addTarget:textView action:@selector(clearButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
@@ -1088,6 +1093,7 @@ NSMutableDictionary *mobileInputList = nil;
 /// - Parameter textView: Textview instance
 - (void)textViewDidBeginEditing:(UITextView *)textView {
     if (isMultiline) {
+        currentKeyboardOffset = keyboardOffset;
         NSMutableDictionary *msg = [[NSMutableDictionary alloc] init];
         [msg setValue:ON_FOCUS forKey:@"msg"];
         [self sendData:msg];
@@ -1190,6 +1196,7 @@ NSMutableDictionary *mobileInputList = nil;
 /// Callback on input focused
 /// - Parameter textField: Textfield instance
 - (void)textFieldActive:(UITextField *)textField {
+    currentKeyboardOffset = keyboardOffset;
     NSMutableDictionary *msg = [[NSMutableDictionary alloc] init];
     [msg setValue:ON_FOCUS forKey:@"msg"];
     [self sendData:msg];
